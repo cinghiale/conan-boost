@@ -6,14 +6,34 @@ import sys
 
 class BoostConan(ConanFile):
     name = "Boost"
-    version = "1.60.0"
+    version = "1.62.0.beta.1"
     settings = "os", "arch", "compiler", "build_type"
-    FOLDER_NAME = "boost_%s" % version.replace(".", "_")
     options = {"shared": [True, False], "header_only": [True, False], "fPIC": [True, False]}
     default_options = "shared=False", "header_only=False", "fPIC=False"
     url = "https://github.com/lasote/conan-boost"
     exports = ["FindBoost.cmake"]
     license = "Boost Software License - Version 1.0. http://www.boost.org/LICENSE_1_0.txt"
+
+    def __init__(self, *args, **kw):
+        super(BoostConan, self).__init__(*args, **kw)
+
+    @property
+    def folder_name(self):
+        name = "boost_%s" % self.version.replace(".", "_")
+        # strip the beta version because the folder extracted from the archive
+        # doesn't have it
+        if "beta" in self.version:
+            ix = name.find("_beta_")
+            name = name[:ix]
+        return name
+
+    @property
+    def archive_name(self):
+        if "beta" in self.version:
+            name = self.version.replace(".", "_").replace("beta_", "b")
+        else:
+            name = self.folder_name
+        return "boost_%s.tar.gz" % name
 
     def conan_info(self):
         if self.options.header_only:
@@ -55,8 +75,10 @@ class BoostConan(ConanFile):
                 self.options["bzip2"].shared = self.options.shared
 
     def source(self):
-        zip_name = "%s.zip" % self.FOLDER_NAME if sys.platform == "win32" else "%s.tar.gz" % self.FOLDER_NAME
-        url = "http://sourceforge.net/projects/boost/files/boost/%s/%s/download" % (self.version, zip_name)
+        zip_name = self.archive_name
+        url = "http://sourceforge.net/projects/boost/files/boost/{version}/{archive}/download"
+        url = url.format(version=self.version, archive=zip_name)
+
         self.output.info("Downloading %s..." % url)
         tools.download(url, zip_name)
         tools.unzip(zip_name, ".")
@@ -66,15 +88,16 @@ class BoostConan(ConanFile):
         if self.options.header_only:
             self.output.warn("Header only package, skipping build")
             return
+
         command = "bootstrap" if self.settings.os == "Windows" else "./bootstrap.sh"
         if self.settings.os == "Windows" and self.settings.compiler == "gcc":
             command += " mingw"
         try:
-            self.run("cd %s && %s" % (self.FOLDER_NAME, command))
+            self.run("cd %s && %s" % (self.folder_name, command))
         except:
-            self.run("cd %s && type bootstrap.log" % self.FOLDER_NAME
+            self.run("cd %s && type bootstrap.log" % self.folder_name
                      if self.settings.os == "Windows"
-                     else "cd %s && cat bootstrap.log" % self.FOLDER_NAME)
+                     else "cd %s && cat bootstrap.log" % self.folder_name)
             raise
 
         flags = []
@@ -125,7 +148,7 @@ class BoostConan(ConanFile):
             deps_options = ""
 
         full_command = "cd %s && %s %s -j4 --abbreviate-paths --without-python %s" % (
-            self.FOLDER_NAME, command, b2_flags, deps_options)
+            self.folder_name, command, b2_flags, deps_options)
         self.output.warn(full_command)
         self.run(full_command)  # , output=False)
 
@@ -149,13 +172,13 @@ class BoostConan(ConanFile):
         # Copy findZLIB.cmake to package
         self.copy("FindBoost.cmake", ".", ".")
 
-        self.copy(pattern="*", dst="include/boost", src="%s/boost" % self.FOLDER_NAME)
-        self.copy(pattern="*.a", dst="lib", src="%s/stage/lib" % self.FOLDER_NAME)
-        self.copy(pattern="*.so", dst="lib", src="%s/stage/lib" % self.FOLDER_NAME)
-        self.copy(pattern="*.so.*", dst="lib", src="%s/stage/lib" % self.FOLDER_NAME)
-        self.copy(pattern="*.dylib*", dst="lib", src="%s/stage/lib" % self.FOLDER_NAME)
-        self.copy(pattern="*.lib", dst="lib", src="%s/stage/lib" % self.FOLDER_NAME)
-        self.copy(pattern="*.dll", dst="bin", src="%s/stage/lib" % self.FOLDER_NAME)
+        self.copy(pattern="*", dst="include/boost", src="%s/boost" % self.folder_name)
+        self.copy(pattern="*.a", dst="lib", src="%s/stage/lib" % self.folder_name)
+        self.copy(pattern="*.so", dst="lib", src="%s/stage/lib" % self.folder_name)
+        self.copy(pattern="*.so.*", dst="lib", src="%s/stage/lib" % self.folder_name)
+        self.copy(pattern="*.dylib*", dst="lib", src="%s/stage/lib" % self.folder_name)
+        self.copy(pattern="*.lib", dst="lib", src="%s/stage/lib" % self.folder_name)
+        self.copy(pattern="*.dll", dst="bin", src="%s/stage/lib" % self.folder_name)
 
     def package_info(self):
 
@@ -174,6 +197,7 @@ class BoostConan(ConanFile):
             "context",
             "coroutine",
             "date_time",
+            "fiber",
             "filesystem",
             "graph",
             "locale",
@@ -193,6 +217,7 @@ class BoostConan(ConanFile):
             "signals",
             "system",
             "thread",
+            "type_erasure",
             "timer",
             "unit_test_framework",
             "wave",
