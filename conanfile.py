@@ -11,7 +11,6 @@ class BoostConan(ConanFile):
     FOLDER_NAME = "boost_%s" % version.replace(".", "_")
     options = {"shared": [True, False], "header_only": [True, False], "fPIC": [True, False]}
     default_options = "shared=False", "header_only=False", "fPIC=False"
-    counter_config = 0
     url = "https://github.com/lasote/conan-boost"
     exports = ["FindBoost.cmake"]
     license = "Boost Software License - Version 1.0. http://www.boost.org/LICENSE_1_0.txt"
@@ -20,9 +19,7 @@ class BoostConan(ConanFile):
         if self.options.header_only:
             self.info.requires._data = {}
 
-    def config(self):
-        self.counter_config += 1
-        # config is called twice, one before receive the upper dependencies and another after
+    def config_options(self):
         if self.settings.compiler == "Visual Studio" and \
            self.options.shared and "MT" in str(self.settings.compiler.runtime):
             self.options.shared = False
@@ -33,25 +30,26 @@ class BoostConan(ConanFile):
             except:
                 pass
 
-        # BZIP2
-        if self.counter_config == 2:
-            if self.settings.os == "Linux" or self.settings.os == "Macos":
-                self.requires.add("bzip2/1.0.6@lasote/stable", private=False)
-                if not self.options.header_only:
-                    self.options["bzip2/1.0.6"].shared = self.options.shared
-            self.requires.add("zlib/1.2.8@lasote/stable", private=False)
+        # Header only
+        if self.options.header_only:
+            self.settings.remove("compiler")
+            self.settings.remove("os")
+            self.settings.remove("arch")
+            self.settings.remove("build_type")
+            self.options.remove("shared")
 
-            # Header only
-            if self.options.header_only:
-                self.settings.remove("compiler")
-                self.settings.remove("os")
-                self.settings.remove("arch")
-                self.settings.remove("build_type")
-                self.options.remove("shared")
+    def configure(self):
+        # BZIP2
+        if self.settings.os == "Linux" or self.settings.os == "Macos":
+            self.requires.add("bzip2/1.0.6@lasote/stable", private=False)
+            if not self.options.header_only:
+                self.options["bzip2/1.0.6"].shared = self.options.shared
+        self.requires.add("zlib/1.2.8@lasote/stable", private=False)
 
         if "zlib" in self.requires:
             if not self.options.header_only:
                 self.options["zlib"].shared = self.options.shared
+
         if "bzip2" in self.requires:
             if not self.options.header_only:
                 self.options["bzip2"].shared = self.options.shared
