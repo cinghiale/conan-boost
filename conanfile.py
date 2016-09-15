@@ -1,12 +1,12 @@
 from conans import ConanFile
 from conans import tools
 import os
-import sys
 
 
 class BoostConan(ConanFile):
     name = "Boost"
-    version = "1.62.0.beta.1"
+    version = "1.62.0.beta.2"
+    digest = "3939d5efa683449e87b374d7e92e3eeb6490063ddb2877919f0fad26e3a0f53e"
     settings = "os", "arch", "compiler", "build_type"
     options = {"shared": [True, False], "header_only": [True, False], "fPIC": [True, False]}
     default_options = "shared=False", "header_only=False", "fPIC=False"
@@ -81,6 +81,7 @@ class BoostConan(ConanFile):
 
         self.output.info("Downloading %s..." % url)
         tools.download(url, zip_name)
+        tools.check_sha256(zip_name, self.digest)
         tools.unzip(zip_name, ".")
         os.unlink(zip_name)
 
