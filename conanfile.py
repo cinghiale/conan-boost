@@ -5,8 +5,8 @@ import os
 
 class BoostConan(ConanFile):
     name = "Boost"
-    version = "1.62.0.beta.2"
-    digest = "3939d5efa683449e87b374d7e92e3eeb6490063ddb2877919f0fad26e3a0f53e"
+    version = "1.62.0"
+    digest = "440a59f8bc4023dbe6285c9998b0f7fa288468b889746b1ef00e8b36c559dce1"
     settings = "os", "arch", "compiler", "build_type"
     options = {"shared": [True, False], "header_only": [True, False], "fPIC": [True, False]}
     default_options = "shared=False", "header_only=False", "fPIC=False"
@@ -32,7 +32,7 @@ class BoostConan(ConanFile):
         if "beta" in self.version:
             name = self.version.replace(".", "_").replace("beta_", "b")
         else:
-            name = self.folder_name
+            name = self.version.replace(".", "_")
         return "boost_%s.tar.gz" % name
 
     def conan_info(self):
@@ -155,11 +155,11 @@ class BoostConan(ConanFile):
 
     def prepare_deps_options(self):
         ret = ""
-        if "bzip2" in self.requires:
-            include_path = self.deps_cpp_info["bzip2"].include_paths[0]
-            lib_path = self.deps_cpp_info["bzip2"].lib_paths[0]
-            lib_name = self.deps_cpp_info["bzip2"].libs[0]
-            ret += "-s BZIP2_BINARY=%s -s BZIP2_INCLUDE=%s -s BZIP2_LIBPATH=%s" % (lib_name, include_path, lib_path)
+#        if "bzip2" in self.requires:
+#            include_path = self.deps_cpp_info["bzip2"].include_paths[0]
+#            lib_path = self.deps_cpp_info["bzip2"].lib_paths[0]
+#            lib_name = self.deps_cpp_info["bzip2"].libs[0]
+#            ret += "-s BZIP2_BINARY=%s -s BZIP2_INCLUDE=%s -s BZIP2_LIBPATH=%s" % (lib_name, include_path, lib_path)
 #    FIXME: I think ZLIB variables should be setted now as env variables. But compilation works anyway.
 #         if "zlib" in self.requires:
 #             include_path = self.deps_cpp_info["zlib"].include_paths[0]
